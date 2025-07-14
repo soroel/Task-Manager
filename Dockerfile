@@ -1,44 +1,47 @@
-# Use official PHP image with FPM
+# Use PHP 8.2 with required extensions
 FROM php:8.2-fpm
 
-# Install system dependencies
+# Install system dependencies and PHP extensions
 RUN apt-get update && apt-get install -y \
-    build-essential \
+    git \
+    curl \
+    unzip \
+    zip \
+    libzip-dev \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
-    libzip-dev \
-    libpq-dev \
-    zip \
-    unzip \
-    curl \
-    git \
-    npm \
-    nodejs \
+    sqlite3 \
+    libsqlite3-dev \
+    gnupg \
     && docker-php-ext-install pdo pdo_sqlite mbstring exif pcntl bcmath gd zip
 
-# Install Composer
+# Install Node.js + npm (LTS version)
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs
+
+# Install Composer globally
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Set working directory
 WORKDIR /var/www
 
-# Copy existing application
+# Copy application files
 COPY . .
 
-# Set up writable SQLite DB if needed
+# Create the SQLite database file
 RUN mkdir -p database && touch database/database.sqlite
 
-# Install PHP and JS dependencies
+# Install backend and frontend dependencies
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 RUN npm install && npm run build
 
-# Laravel permissions
-RUN chown -R www-data:www-data /var/www \
-    && chmod -R 775 storage bootstrap/cache database
+# Set correct permissions
+RUN chmod -R 775 storage bootstrap/cache database && \
+    chown -R www-data:www-data .
 
-# Expose port for Render
+# Laravel listens on port 10000 on Render
 EXPOSE 10000
 
-# Start Laravel on the correct port
+# Start Laravel server
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=10000"]
