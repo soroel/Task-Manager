@@ -40,6 +40,12 @@ RUN npm install && npm run build
 RUN chmod -R 775 storage bootstrap/cache database && \
     chown -R www-data:www-data .
 
+# create the database directory ad empty SQLite file
+RUN mkdir -p /app/database && touch /app/database/database.sqlite
+
+# Fix permissions so Laravel can write to it
+RUN chown -R www-data:www-data /app/database && \
+    chmod -R 775 /app/database
 # Laravel listens on port 10000 on Render
 EXPOSE 10000
 
