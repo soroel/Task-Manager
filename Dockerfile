@@ -46,6 +46,9 @@ RUN mkdir -p /app/database && touch /app/database/database.sqlite
 # Fix permissions so Laravel can write to it
 RUN chown -R www-data:www-data /app/database && \
     chmod -R 775 /app/database
+
+# migrations
+RUN php artisan migrate --force
 # Laravel listens on port 10000 on Render
 EXPOSE 10000
 
